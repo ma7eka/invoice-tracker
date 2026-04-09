@@ -2,217 +2,161 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <title>我的雲端發票管家</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>個人財務與資產看板</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+TC:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
-    /* 1. 基礎設定：背景與字體 */
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+TC:wght@400;700&display=swap');
-
-    body {
-      background: #f4f7f9; /* 極簡淺灰藍 */
-      font-family: 'Inter', 'Noto Sans TC', sans-serif;
-      color: #2d3436;
-      padding-top: 60px;
-    }
-
-    .container {
-      max-width: 950px;
-      background: transparent; /* 容器透明，讓卡片浮起來 */
-    }
-
-    /* 2. 標題區塊優化 */
-    h2 {
-      font-weight: 700;
-      letter-spacing: -1px;
-      color: #2d3436;
-      margin-bottom: 30px;
-    }
-
-    /* 3. 漸層卡片：增加圓角與柔和陰影 */
-    .card {
-      border: none;
-      border-radius: 24px; /* 超大圓角才有現代感 */
-      box-shadow: 0 10px 20px rgba(0,0,0,0.05); /* 輕柔陰影 */
-      transition: all 0.3s ease;
-    }
-
-    .card:hover {
-      transform: translateY(-8px);
-      box-shadow: 0 15px 30px rgba(0,0,0,0.1);
-    }
-
-    .card-count {
-      background: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%);
-    }
-
-    .card-amount {
-      background: linear-gradient(135deg, #00b894 0%, #55efc4 100%);
-    }
-
-    /* 4. 最新號碼方塊：加入「科技黑」質感 */
-    .card-latest {
-      background: #2d3436;
-      border-radius: 24px;
-    }
-
-    /* 5. 表格區域優化 */
-    .table-container {
-      background: white;
-      padding: 30px;
-      border-radius: 24px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-      margin-top: 30px;
-    }
-
-    .table {
-      border-collapse: separate;
-      border-spacing: 0 10px; /* 讓每一列有間隙 */
-    }
-
-    .table thead th {
-      border: none;
-      color: #636e72;
-      font-weight: 600;
-      text-transform: uppercase;
-      font-size: 0.8rem;
-      padding-bottom: 20px;
-    }
-
-    .table tbody tr {
-      background: #ffffff;
-      border-radius: 12px;
-      transition: background 0.2s;
-    }
-
-    .table tbody tr:hover {
-      background: #f8f9fa;
-    }
-
-    /* 6. 發票號碼專屬樣式 */
-    .invoice-font {
-      font-family: 'Courier New', monospace;
-      background: #dfe6e9;
-      color: #2d3436;
-      padding: 5px 12px;
-      border-radius: 8px;
-      font-weight: 700;
-      font-size: 0.95rem;
-    }
+    body { background: #f4f7f9; font-family: 'Inter', 'Noto Sans TC', sans-serif; padding-top: 30px; color: #2d3436; }
+    .card { border: none; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.04); }
+    .bg-balance { background: linear-gradient(135deg, #0984e3 0%, #74b9ff 100%); color: white; }
+    .bg-income { background: linear-gradient(135deg, #00b894 0%, #55efc4 100%); color: white; }
+    .bg-expense { background: linear-gradient(135deg, #d63031 0%, #ff7675 100%); color: white; }
+    .panel { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.03); margin-bottom: 24px; }
+    .text-income { color: #00b894 !important; font-weight: 700; }
+    .text-expense { color: #d63031 !important; font-weight: 700; }
+    .month-picker { background: #fff; border: 2px solid #0984e3; color: #0984e3; font-weight: bold; }
   </style>
 </head>
 <body>
 
-<div class="container">
+<div class="container" style="max-width: 1000px;">
   <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>🧾 雲端發票自動追蹤系統</h2>
-    <span class="badge bg-dark rounded-pill px-3 py-2">
-            <span class="status-pulse"></span>系統實時運作中
-        </span>
-  </div>
-
-  <div class="row mb-4">
-    <div class="col-md-6">
-      <div class="card card-count text-white text-center p-4">
-        <h6 class="text-uppercase opacity-75">發票總數</h6>
-        <h2 id="stat-count" class="stat-number">0</h2>
-      </div>
-    </div>
-
-    <div class="col-md-6">
-      <div class="card card-amount text-white text-center p-4">
-        <h6 class="text-uppercase opacity-75">累計總金額</h6>
-        <h2 id="stat-amount" class="stat-number">$0</h2>
-      </div>
+    <h2 class="fw-bold m-0">💰 個人財務看板</h2>
+    <div class="d-flex gap-2">
+      <input type="month" id="filter-month" class="form-control rounded-pill month-picker shadow-sm" onchange="updateDashboard()">
+      <button onclick="clearAllData()" class="btn btn-outline-danger rounded-pill px-3 shadow-sm">清空</button>
     </div>
   </div>
 
-  <p class="text-muted">最新的 10 筆消費紀錄（每 10 秒自動產生）</p>
+  <div class="row g-4 mb-4">
+    <div class="col-md-4"><div class="card bg-balance p-4 text-center"><p class="opacity-75 mb-1">本月結餘</p><h2 id="stat-balance" class="m-0 fw-bold">$0</h2></div></div>
+    <div class="col-md-4"><div class="card bg-income p-4 text-center"><p class="opacity-75 mb-1">本月收入</p><h2 id="stat-income" class="m-0 fw-bold">$0</h2></div></div>
+    <div class="col-md-4"><div class="card bg-expense p-4 text-center"><p class="opacity-75 mb-1">本月支出</p><h2 id="stat-expense" class="m-0 fw-bold">$0</h2></div></div>
+  </div>
 
-  <table class="table table-hover">
-    <thead class="table-light">
-    <tr>
-      <th>ID</th>
-      <th>發票號碼</th>
-      <th>消費店家</th>
-      <th>金額</th>
-    </tr>
-    </thead>
-    <tbody id="invoice-list"></tbody>
-  </table>
+  <div class="panel border-start border-4 border-primary">
+    <div class="row g-2">
+      <div class="col-md-2"><input type="date" id="m-date" class="form-control rounded-pill bg-light border-0"></div>
+      <div class="col-md-2">
+        <select id="m-type" class="form-select rounded-pill bg-light border-0" onchange="updateCategories()">
+          <option value="支出">📉 支出</option><option value="收入">📈 收入</option>
+        </select>
+      </div>
+      <div class="col-md-2"><select id="m-cat" class="form-select rounded-pill bg-light border-0"></select></div>
+      <div class="col-md-3"><input type="text" id="m-store" class="form-control rounded-pill bg-light border-0" placeholder="項目名稱"></div>
+      <div class="col-md-2"><input type="number" id="m-amount" class="form-control rounded-pill bg-light border-0" placeholder="金額"></div>
+      <div class="col-md-1"><button onclick="submitManual()" class="btn btn-primary w-100 rounded-pill fw-bold">+</button></div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-md-4">
+      <div class="panel h-100"><h5 class="fw-bold mb-4">📊 分類佔比</h5>
+        <div style="position: relative; height: 250px;"><canvas id="categoryChart"></canvas></div>
+      </div>
+    </div>
+    <div class="col-md-8">
+      <div class="panel h-100"><h5 class="fw-bold mb-3">📝 紀錄明細</h5>
+        <div class="table-responsive">
+          <table class="table align-middle table-borderless">
+            <thead class="border-bottom text-muted"><tr><th>日期</th><th>分類</th><th>項目</th><th class="text-end">金額</th></tr></thead>
+            <tbody id="invoice-list"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
-  // 數字滾動動畫函數
-  function animateNumber(id, target) {
-    const el = document.getElementById(id);
-    const currentText = el.innerText.replace(/[$,]/g, '');
-    const current = parseInt(currentText) || 0;
-    if (current === target) return;
+  let myChart = null;
 
-    const step = (target - current) / 10;
-    let count = current;
+  // 初始化日期：設定為本月
+  const now = new Date();
+  const currentMonth = now.toISOString().substring(0, 7); // YYYY-MM
+  document.getElementById('filter-month').value = currentMonth;
+  document.getElementById('m-date').value = now.toISOString().split('T')[0];
 
-    const timer = setInterval(() => {
-      count += step;
-      if ((step > 0 && count >= target) || (step < 0 && count <= target)) {
-        el.innerText = (id === 'stat-amount' ? '$' : '') + target.toLocaleString();
-        clearInterval(timer);
+  function updateCategories() {
+    const type = document.getElementById('m-type').value;
+    const catSelect = document.getElementById('m-cat');
+    catSelect.innerHTML = '';
+    const cats = (type === '支出') ? ['餐飲美食', '生活用品', '交通出行', '娛樂消費', '虛擬資產', '其他支出'] : ['薪資收入', '投資獲利', '獎金補貼', '其他收入'];
+    cats.forEach(c => catSelect.innerHTML += `<option value="${c}">${c}</option>`);
+  }
+  updateCategories();
+
+  function updateDashboard() {
+    const selectedMonth = document.getElementById('filter-month').value;
+    refreshInvoices(selectedMonth);
+    updateChart(selectedMonth);
+  }
+
+  function refreshInvoices(month) {
+    fetch('/show-all').then(res => res.json()).then(data => {
+      const list = document.getElementById('invoice-list');
+      list.innerHTML = '';
+      let inc = 0, exp = 0;
+
+      // 🔥 根據月份篩選資料
+      const filtered = data.filter(inv => inv.date && inv.date.startsWith(month)).reverse();
+
+      filtered.forEach(inv => {
+        if(inv.type === '收入') inc += inv.amount; else exp += inv.amount;
+        const cls = (inv.type === '收入') ? 'text-income' : 'text-expense';
+        list.innerHTML += `
+                    <tr class="border-bottom">
+                        <td class="text-muted small">${inv.date}</td>
+                        <td><span class="badge bg-secondary rounded-pill">${inv.category}</span></td>
+                        <td class="fw-bold">${inv.sellerName}</td>
+                        <td class="${cls} text-end">$${inv.amount.toLocaleString()}</td>
+                    </tr>`;
+      });
+
+      document.getElementById('stat-income').innerText = '$' + inc.toLocaleString();
+      document.getElementById('stat-expense').innerText = '$' + exp.toLocaleString();
+      document.getElementById('stat-balance').innerText = '$' + (inc - exp).toLocaleString();
+      if(filtered.length === 0) list.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-muted">該月份尚無紀錄</td></tr>`;
+    });
+  }
+
+  function updateChart(month) {
+    fetch(`/stats/category?month=${month}`).then(res => res.json()).then(data => {
+      const ctx = document.getElementById('categoryChart').getContext('2d');
+      const labels = Object.keys(data), values = Object.values(data);
+      if (myChart) {
+        myChart.data.labels = labels; myChart.data.datasets[0].data = values; myChart.update();
       } else {
-        el.innerText = (id === 'stat-amount' ? '$' : '') + Math.floor(count).toLocaleString();
+        myChart = new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels: labels,
+            datasets: [{ data: values, backgroundColor: ['#6c5ce7', '#00b894', '#fdcb6e', '#ff7675', '#0984e3'], borderWidth: 0 }]
+          },
+          options: { maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom' } } }
+        });
       }
-    }, 30);
+    });
   }
 
-  function refreshInvoices() {
-    fetch('/show-all')
-            .then(res => res.json())
-            .then(data => {
-              console.log("後端傳來的資料：", data[0]); // 這行會在 F12 視窗告訴你真相
-              const list = document.getElementById('invoice-list');
-              const latestNumEl = document.getElementById('latest-inv-num');
-              list.innerHTML = '';
-
-              if(data && data.length > 0) {
-                const sortedData = data.reverse();
-
-                // 這裡要對準 JSON 的 Key。根據你之前的回傳，應該是大寫的 InvNum
-                const latestInvoice = sortedData[0];
-                if (latestNumEl) {
-                  latestNumEl.innerText = latestInvoice.InvNum || latestInvoice.invNum || "格式錯誤";
-                }
-
-                sortedData.slice(0, 10).forEach(inv => {
-                  // 使用「二選一」策略，管它大寫還是小寫都能抓到
-                  const displayNum = inv.InvNum || inv.invNum || "N/A";
-
-                  list.innerHTML += `
-                        <tr class="fade-in-row align-middle">
-                            <td class="text-muted">#${inv.id}</td>
-                            <td><span class="invoice-font">${displayNum}</span></td>
-                            <td class="fw-bold">${inv.sellerName}</td>
-                            <td class="fw-bold text-success">$${inv.amount.toLocaleString()}</td>
-                        </tr>
-                    `;
-                });
-              }
-            });
+  function submitManual() {
+    const payload = {
+      date: document.getElementById('m-date').value,
+      type: document.getElementById('m-type').value,
+      category: document.getElementById('m-cat').value,
+      sellerName: document.getElementById('m-store').value,
+      amount: parseInt(document.getElementById('m-amount').value)
+    };
+    if (!payload.sellerName || !payload.amount) return alert("請輸入完整資料");
+    fetch('/add', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+            .then(() => { document.getElementById('m-store').value = ''; document.getElementById('m-amount').value = ''; updateDashboard(); });
   }
 
-  function refreshStats() {
-    fetch('/stats')
-            .then(res => res.json())
-            .then(data => {
-              animateNumber('stat-count', data.totalCount);
-              animateNumber('stat-amount', data.totalAmount);
-            });
-  }
+  function clearAllData() { if(confirm("確定清空嗎？")) fetch('/clear-all', { method: 'DELETE' }).then(() => updateDashboard()); }
 
-  setInterval(() => {
-    refreshInvoices();
-    refreshStats();
-  }, 2000);
-
-  refreshInvoices();
-  refreshStats();
+  updateDashboard();
 </script>
 </body>
+</html>

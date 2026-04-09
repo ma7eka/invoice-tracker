@@ -1,48 +1,51 @@
-package com.example.invoicetracker;
+package com.example.invoicetracker; // 注意你的 package 名稱
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
-import java.util.*;
+import java.util.Map;
+import java.util.Random;
+import java.util.stream.Collectors;
 
 @RestController
 public class HelloController {
 
     @Autowired
-    private InvoiceRepository invoiceRepository; // 叫辦事員過來
+    private InvoiceRepository invoiceRepository;
 
-    @GetMapping("/stats")
-    public Map<String, Object> getStats() {
-        Map<String, Object> stats = new HashMap<>();
-        long count = invoiceRepository.count();
-
-        // 取得總金額，如果沒資料就給 0
-        List<Invoice> all = invoiceRepository.findAll();
-        int totalAmount = all.stream().mapToInt(Invoice::getAmount).sum();
-
-        stats.put("totalCount", count);
-        stats.put("totalAmount", totalAmount);
-        return stats;
-    }
-
-    @GetMapping("/test-save")
-    public String testSave(){
-        // 1. 建立一筆假資料
-        Invoice sample = new Invoice();
-        sample.setInvNum("ABC-12345");
-        sample.setSellerName("淡水老街大屌燒");
-        sample.setAmount(150);
-        // 2. 叫辦事員存進去
-        invoiceRepository.save(sample);
-
-        return "資料已存進 H2 DB!";
-    }
-
-
+    // 1. 取得所有發票
     @GetMapping("/show-all")
-    public List<Invoice> showALL(){
-        // 3. 叫辦事員把所有資料拿出來
+    public List<Invoice> getAllInvoices() {
         return invoiceRepository.findAll();
+    }
+
+    // 2. 手動新增記帳
+    // 2. 手動新增記帳
+    @PostMapping("/add")
+    public Invoice addManual(@RequestBody Invoice invoice) {
+
+        return invoiceRepository.save(invoice);
+    }
+
+    // 圓餅圖專用：只統計「支出」的分類
+    // 修改圓餅圖 API：加入月份過濾
+    @GetMapping("/stats/category")
+    public Map<String, Integer> getCategoryStats(@RequestParam(required = false) String month) {
+        return invoiceRepository.findAll().stream()
+                .filter(inv -> "支出".equals(inv.getType()))
+                // 🔥 加入月份過濾：如果前端有傳 month (格式 YYYY-MM)，就過濾日期
+                .filter(inv -> month == null || month.isEmpty() || (inv.getDate() != null && inv.getDate().startsWith(month)))
+                .collect(Collectors.groupingBy(
+                        inv -> inv.getCategory() == null ? "未分類" : inv.getCategory(),
+                        Collectors.summingInt(Invoice::getAmount)
+                ));
+    }
+
+    // 4. 清空資料庫
+    @DeleteMapping("/clear-all")
+    public String clearAll() {
+        invoiceRepository.deleteAll();
+        return "Cleared";
     }
 }
