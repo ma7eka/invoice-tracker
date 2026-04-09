@@ -92,15 +92,6 @@
 </div>
 
 <script>
-  // 在 refreshInvoices 函數裡的 list.innerHTML 部分
-  list.innerHTML += `
-    <tr>
-        <td class="text-muted">#${inv.id}</td>
-        <td><span class="badge badge-invoice">${inv.invNum}</span></td>
-        <td class="fw-bold">${inv.sellerName}</td>
-        <td class="fw-bold text-success" style="font-size: 1.1rem;">$${inv.amount}</td>
-    </tr>
-`;
   // 抓取發票清單 API
   function refreshInvoices() {
     fetch('/show-all')
@@ -108,18 +99,23 @@
             .then(data => {
               const list = document.getElementById('invoice-list');
               list.innerHTML = '';
-              // 只顯示最近的 10 筆，不然畫面會太長
-              data.reverse().slice(0, 10).forEach(inv => {
-                list.innerHTML += `
+
+              // 確保有資料才執行
+              if(data && data.length > 0) {
+                // .reverse() 讓最新的排在上面，.slice(0, 10) 只取前十筆
+                data.reverse().slice(0, 10).forEach(inv => {
+                  list.innerHTML += `
                         <tr>
-                            <td>${inv.id}</td>
-                            <td><span class="badge bg-secondary">${inv.invNum}</span></td>
-                            <td>${inv.sellerName}</td>
-                            <td class="fw-bold text-success">$${inv.amount}</td>
+                            <td class="text-muted">#${inv.id}</td>
+                            <td><span class="badge badge-invoice">${inv.invNum}</span></td>
+                            <td class="fw-bold">${inv.sellerName}</td>
+                            <td class="fw-bold text-success" style="font-size: 1.1rem;">$${inv.amount}</td>
                         </tr>
                     `;
-              });
-            });
+                });
+              }
+            })
+            .catch(err => console.error("抓取清單失敗:", err));
   }
 
   // 抓取統計數據 API
@@ -129,18 +125,18 @@
             .then(data => {
               // 把數字填入對應的 ID 卡片中
               document.getElementById('stat-count').innerText = data.totalCount;
-              document.getElementById('stat-amount').innerText = '$' + data.totalAmount.toLocaleString(); // 加入千分位符號比較好看
+              document.getElementById('stat-amount').innerText = '$' + data.totalAmount.toLocaleString();
             })
             .catch(err => console.error("統計資料抓取失敗:", err));
   }
 
-  // 每 2 秒同步一次 (頻率可以自己調)
+  // 每 2 秒同步一次
   setInterval(() => {
     refreshInvoices();
     refreshStats();
   }, 2000);
 
-  // 網頁開啟時立刻執行
+  // 網頁開啟時立刻啟動一次
   refreshInvoices();
   refreshStats();
 </script>
