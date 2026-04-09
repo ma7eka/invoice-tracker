@@ -5,74 +5,98 @@
   <title>我的雲端發票管家</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+    /* 1. 基礎設定：背景與字體 */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+TC:wght@400;700&display=swap');
 
     body {
-      background-color: #f0f2f5;
-      font-family: 'Inter', -apple-system, sans-serif;
-      padding-top: 50px;
+      background: #f4f7f9; /* 極簡淺灰藍 */
+      font-family: 'Inter', 'Noto Sans TC', sans-serif;
+      color: #2d3436;
+      padding-top: 60px;
     }
 
     .container {
-      max-width: 900px;
-      background: white;
-      padding: 40px;
-      border-radius: 20px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+      max-width: 950px;
+      background: transparent; /* 容器透明，讓卡片浮起來 */
     }
 
-    /* 閃爍綠燈特效 */
-    .status-pulse {
-      width: 10px;
-      height: 10px;
-      background: #2ecc71;
-      border-radius: 50%;
-      display: inline-block;
-      margin-right: 8px;
-      box-shadow: 0 0 0 rgba(46, 204, 113, 0.4);
-      animation: pulse 2s infinite;
+    /* 2. 標題區塊優化 */
+    h2 {
+      font-weight: 700;
+      letter-spacing: -1px;
+      color: #2d3436;
+      margin-bottom: 30px;
     }
 
-    @keyframes pulse {
-      0% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.4); }
-      70% { box-shadow: 0 0 0 10px rgba(46, 204, 113, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); }
+    /* 3. 漸層卡片：增加圓角與柔和陰影 */
+    .card {
+      border: none;
+      border-radius: 24px; /* 超大圓角才有現代感 */
+      box-shadow: 0 10px 20px rgba(0,0,0,0.05); /* 輕柔陰影 */
+      transition: all 0.3s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 15px 30px rgba(0,0,0,0.1);
     }
 
     .card-count {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      border: none;
-      transition: transform 0.3s;
+      background: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%);
     }
 
     .card-amount {
-      background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+      background: linear-gradient(135deg, #00b894 0%, #55efc4 100%);
+    }
+
+    /* 4. 最新號碼方塊：加入「科技黑」質感 */
+    .card-latest {
+      background: #2d3436;
+      border-radius: 24px;
+    }
+
+    /* 5. 表格區域優化 */
+    .table-container {
+      background: white;
+      padding: 30px;
+      border-radius: 24px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+      margin-top: 30px;
+    }
+
+    .table {
+      border-collapse: separate;
+      border-spacing: 0 10px; /* 讓每一列有間隙 */
+    }
+
+    .table thead th {
       border: none;
-      transition: transform 0.3s;
+      color: #636e72;
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.8rem;
+      padding-bottom: 20px;
     }
 
-    .card:hover { transform: translateY(-5px); }
-
-    h2.stat-number {
-      font-weight: 700;
-      font-size: 2.8rem;
-      letter-spacing: -1px;
+    .table tbody tr {
+      background: #ffffff;
+      border-radius: 12px;
+      transition: background 0.2s;
     }
 
-    .badge-invoice {
-      background-color: #e9ecef;
-      color: #495057;
+    .table tbody tr:hover {
+      background: #f8f9fa;
+    }
+
+    /* 6. 發票號碼專屬樣式 */
+    .invoice-font {
       font-family: 'Courier New', monospace;
-    }
-
-    /* 每一列進場的淡入動畫 */
-    .fade-in-row {
-      animation: fadeIn 0.5s ease-out forwards;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(-10px); }
-      to { opacity: 1; transform: translateY(0); }
+      background: #dfe6e9;
+      color: #2d3436;
+      padding: 5px 12px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.95rem;
     }
   </style>
 </head>
@@ -87,13 +111,14 @@
   </div>
 
   <div class="row mb-4">
-    <div class="col-6">
+    <div class="col-md-6">
       <div class="card card-count text-white text-center p-4">
         <h6 class="text-uppercase opacity-75">發票總數</h6>
         <h2 id="stat-count" class="stat-number">0</h2>
       </div>
     </div>
-    <div class="col-6">
+
+    <div class="col-md-6">
       <div class="card card-amount text-white text-center p-4">
         <h6 class="text-uppercase opacity-75">累計總金額</h6>
         <h2 id="stat-amount" class="stat-number">$0</h2>
@@ -142,18 +167,32 @@
     fetch('/show-all')
             .then(res => res.json())
             .then(data => {
+              console.log("後端傳來的資料：", data[0]); // 這行會在 F12 視窗告訴你真相
               const list = document.getElementById('invoice-list');
+              const latestNumEl = document.getElementById('latest-inv-num');
               list.innerHTML = '';
+
               if(data && data.length > 0) {
-                data.reverse().slice(0, 10).forEach(inv => {
+                const sortedData = data.reverse();
+
+                // 這裡要對準 JSON 的 Key。根據你之前的回傳，應該是大寫的 InvNum
+                const latestInvoice = sortedData[0];
+                if (latestNumEl) {
+                  latestNumEl.innerText = latestInvoice.InvNum || latestInvoice.invNum || "格式錯誤";
+                }
+
+                sortedData.slice(0, 10).forEach(inv => {
+                  // 使用「二選一」策略，管它大寫還是小寫都能抓到
+                  const displayNum = inv.InvNum || inv.invNum || "N/A";
+
                   list.innerHTML += `
-                            <tr class="fade-in-row">
-                                <td class="text-muted">#${inv.id}</td>
-                                <td><span class="badge badge-invoice">${inv.invNum}</span></td>
-                                <td class="fw-bold">${inv.sellerName}</td>
-                                <td class="fw-bold text-success">$${inv.amount}</td>
-                            </tr>
-                        `;
+                        <tr class="fade-in-row align-middle">
+                            <td class="text-muted">#${inv.id}</td>
+                            <td><span class="invoice-font">${displayNum}</span></td>
+                            <td class="fw-bold">${inv.sellerName}</td>
+                            <td class="fw-bold text-success">$${inv.amount.toLocaleString()}</td>
+                        </tr>
+                    `;
                 });
               }
             });
@@ -177,4 +216,3 @@
   refreshStats();
 </script>
 </body>
-</html>

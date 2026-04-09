@@ -15,6 +15,6 @@ public class Invoice {
     private Long id;
 
     private String sellerName;
-    private String InvNum;
+    private String invNum; // 小寫開頭
     private Integer amount;
 }

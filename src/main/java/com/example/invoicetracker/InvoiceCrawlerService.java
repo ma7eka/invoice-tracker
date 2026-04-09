@@ -18,16 +18,23 @@ public class InvoiceCrawlerService {
     public void mockFetchInvoice() {
         Random random = new Random();
 
-        Invoice invoice = new Invoice();
-        // 隨機產生發票號碼 (例如: ZZ-12345678)
-        invoice.setInvNum("ZZ-" + (random.nextInt(90000000) + 10000000));
-        // 隨機選一個商家
+        Invoice invoice = new Invoice(); // 這裡你定義的是 invoice
+
+        // 產生真實格式號碼
+        String[] letters = {"AB", "GH", "XY", "JS", "KL", "EM"};
+        String prefix = letters[random.nextInt(letters.length)];
+        int suffix = random.nextInt(90000000) + 10000000;
+        String realStyleNum = prefix + "-" + suffix;
+
+        // 修正這裡：把 sample 改成 invoice
+        invoice.setInvNum(realStyleNum);
+
         invoice.setSellerName(stores[random.nextInt(stores.length)]);
-        // 隨機金額 10 ~ 1000
         invoice.setAmount(random.nextInt(990) + 10);
 
         invoiceRepository.save(invoice);
 
-        System.out.println("偵測到新雲端發票！已自動存入：" + invoice.getSellerName() + "，金額：" + invoice.getAmount());
+        System.out.println("偵測到新雲端發票！號碼：" + realStyleNum + "，店名：" + invoice.getSellerName());
+
     }
 }
