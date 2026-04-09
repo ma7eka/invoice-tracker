@@ -14,6 +14,20 @@
 
 <div class="container">
   <h2>🧾 雲端發票自動追蹤系統</h2>
+  <div class="row mb-4">
+    <div class="col-6">
+      <div class="card bg-primary text-white text-center p-3">
+        <h5>發票總數</h5>
+        <h2 id="stat-count">0</h2>
+      </div>
+    </div>
+    <div class="col-6">
+      <div class="card bg-success text-white text-center p-3">
+        <h5>累計總金額</h5>
+        <h2 id="stat-amount">$0</h2>
+      </div>
+    </div>
+  </div>
   <p class="text-muted">目前的發票清單（每 10 秒自動更新）</p>
 
   <table class="table table-hover">
@@ -31,14 +45,15 @@
 </div>
 
 <script>
-  // 寫一小段 JavaScript 去抓你剛才做好的 API
+  // 抓取發票清單 API
   function refreshInvoices() {
     fetch('/show-all')
             .then(response => response.json())
             .then(data => {
               const list = document.getElementById('invoice-list');
-              list.innerHTML = ''; // 先清空舊的
-              data.forEach(inv => {
+              list.innerHTML = '';
+              // 只顯示最近的 10 筆，不然畫面會太長
+              data.reverse().slice(0, 10).forEach(inv => {
                 list.innerHTML += `
                         <tr>
                             <td>${inv.id}</td>
@@ -51,9 +66,27 @@
             });
   }
 
-  // 每一秒鐘更新一次畫面，讓你看起來像在監控即時資料
-  setInterval(refreshInvoices, 1000);
-  refreshInvoices(); // 網頁打開立刻執行一次
+  // 抓取統計數據 API
+  function refreshStats() {
+    fetch('/stats')
+            .then(res => res.json())
+            .then(data => {
+              // 把數字填入對應的 ID 卡片中
+              document.getElementById('stat-count').innerText = data.totalCount;
+              document.getElementById('stat-amount').innerText = '$' + data.totalAmount.toLocaleString(); // 加入千分位符號比較好看
+            })
+            .catch(err => console.error("統計資料抓取失敗:", err));
+  }
+
+  // 每 2 秒同步一次 (頻率可以自己調)
+  setInterval(() => {
+    refreshInvoices();
+    refreshStats();
+  }, 2000);
+
+  // 網頁開啟時立刻執行
+  refreshInvoices();
+  refreshStats();
 </script>
 
 </body>
